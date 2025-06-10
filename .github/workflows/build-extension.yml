@@ -1,0 +1,51 @@
+name: Build Firefox Extension
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install web-ext
+      run: npm install -g web-ext
+      
+    - name: Build extension
+      run: |
+        # Create XPI using web-ext
+        web-ext build --overwrite-dest
+        
+        # Rename to include version if tag exists
+        if [ "${{ github.ref_type }}" = "tag" ]; then
+          VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+          mv web-ext-artifacts/*.zip word-counter-$VERSION.xpi
+        else
+          mv web-ext-artifacts/*.zip word-counter.xpi
+        fi
+        
+    - name: Upload XPI as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: firefox-extension
+        path: "*.xpi"
+        
+    - name: Create Release
+      if: github.ref_type == 'tag'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: "*.xpi"
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

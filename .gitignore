@@ -1,0 +1,28 @@
+# Build artifacts
+web-ext-artifacts/
+*.zip
+*.xpi
+
+# Development files
+node_modules/
+.web-ext-ignore
+temp-check/
+check-clean/
+check-webext/
+
+# IDE files
+*.code-workspace
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp

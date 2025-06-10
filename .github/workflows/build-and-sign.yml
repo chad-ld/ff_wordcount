@@ -1,0 +1,72 @@
+name: Build and Sign Firefox Extension
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install web-ext
+      run: npm install -g web-ext
+      
+    - name: Update version in manifest
+      if: github.ref_type == 'tag'
+      run: |
+        VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" manifest.json
+        
+    - name: Build extension (unsigned)
+      run: |
+        web-ext build --overwrite-dest
+        VERSION=$(echo ${{ github.ref_name }} | sed 's/v//' || echo "dev")
+        cp web-ext-artifacts/*.zip word-counter-$VERSION-unsigned.xpi
+        
+    - name: Sign extension with Mozilla
+      if: github.ref_type == 'tag' && vars.MOZILLA_API_KEY != ''
+      run: |
+        web-ext sign \
+          --api-key=${{ secrets.MOZILLA_API_KEY }} \
+          --api-secret=${{ secrets.MOZILLA_API_SECRET }} \
+          --channel=unlisted
+        VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+        if [ -f web-ext-artifacts/*.xpi ]; then
+          cp web-ext-artifacts/*.xpi word-counter-$VERSION-signed.xpi
+        fi
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: firefox-extension
+        path: "*.xpi"
+        
+    - name: Create Release
+      if: github.ref_type == 'tag'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: "*.xpi"
+        generate_release_notes: true
+        body: |
+          ## Firefox Extension Release
+          
+          ### Installation Options:
+          1. **Signed XPI** (if available): Install directly in Firefox
+          2. **Unsigned XPI**: Requires developer mode or Firefox Developer Edition
+          3. **Temporary Installation**: Load via about:debugging
+          
+          ### Changes:
+          ${{ github.event.head_commit.message }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
