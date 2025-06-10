@@ -6,6 +6,9 @@ on:
       - 'v*'  # Triggers on version tags like v1.0.0
   workflow_dispatch:  # Allows manual triggering
 
+permissions:
+  contents: write  # Required for creating releases
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -35,12 +38,15 @@ jobs:
         cp web-ext-artifacts/*.zip word-counter-$VERSION-unsigned.xpi
         
     - name: Sign extension with Mozilla
-      if: github.ref_type == 'tag' && vars.MOZILLA_API_KEY != ''
+      if: github.ref_type == 'tag'
+      env:
+        MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+        MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
       run: |
         # Try to sign with a longer timeout
         web-ext sign \
-          --api-key=${{ secrets.MOZILLA_API_KEY }} \
-          --api-secret=${{ secrets.MOZILLA_API_SECRET }} \
+          --api-key="$MOZILLA_API_KEY" \
+          --api-secret="$MOZILLA_API_SECRET" \
           --channel=unlisted \
           --timeout=300000 || echo "Signing timed out - check Mozilla Developer Hub for approval status"
 
@@ -63,18 +69,19 @@ jobs:
         
     - name: Create Release
       if: github.ref_type == 'tag'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: "*.xpi"
         generate_release_notes: true
+        fail_on_unmatched_files: false
         body: |
           ## Firefox Extension Release
-          
+
           ### Installation Options:
           1. **Signed XPI** (if available): Install directly in Firefox
           2. **Unsigned XPI**: Requires developer mode or Firefox Developer Edition
           3. **Temporary Installation**: Load via about:debugging
-          
+
           ### Changes:
           ${{ github.event.head_commit.message }}
       env:
