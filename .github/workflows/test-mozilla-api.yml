@@ -1,0 +1,57 @@
+name: Test Mozilla API Credentials
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install web-ext
+      run: npm install -g web-ext
+      
+    - name: Test Mozilla API credentials
+      run: |
+        echo "Testing Mozilla API credentials..."
+        
+        # Build the extension first for testing
+        web-ext build --overwrite-dest
+        
+        # Test actual signing (this will fail if credentials are wrong)
+        echo "Attempting to sign extension..."
+        web-ext sign \
+          --api-key=${{ secrets.MOZILLA_API_KEY }} \
+          --api-secret=${{ secrets.MOZILLA_API_SECRET }} \
+          --channel=unlisted \
+          --timeout=60000
+          
+      env:
+        MOZILLA_API_KEY: ${{ secrets.MOZILLA_API_KEY }}
+        MOZILLA_API_SECRET: ${{ secrets.MOZILLA_API_SECRET }}
+        
+    - name: Check signing results
+      run: |
+        if [ -f web-ext-artifacts/*.xpi ]; then
+          echo "✅ Extension signed successfully!"
+          ls -la web-ext-artifacts/
+        else
+          echo "❌ No signed XPI found"
+          ls -la web-ext-artifacts/ || echo "No artifacts directory"
+        fi
+        
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-signing-artifacts
+        path: web-ext-artifacts/
+        if-no-files-found: ignore
