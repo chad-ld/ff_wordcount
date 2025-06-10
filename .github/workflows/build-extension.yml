@@ -41,11 +41,13 @@ jobs:
         name: firefox-extension
         path: "*.xpi"
         
-    - name: Create Release
-      if: github.ref_type == 'tag'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: "*.xpi"
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Release creation disabled to avoid conflicts with build-and-sign.yml
+    # The build-and-sign.yml workflow will handle release creation
+    # - name: Create Release
+    #   if: github.ref_type == 'tag'
+    #   uses: softprops/action-gh-release@v1
+    #   with:
+    #     files: "*.xpi"
+    #     generate_release_notes: true
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
