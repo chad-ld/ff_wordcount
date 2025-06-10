@@ -7,6 +7,11 @@
   "background": {
     "scripts": ["background.js"]
   },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{036b4a2c-25f2-49ca-b575-4a6e0acc89b6}"
+    }
+  },
   "icons": {
     "16": "icons/word_counter.jpg",
     "48": "icons/word_counter.jpg",

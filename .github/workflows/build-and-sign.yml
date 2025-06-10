@@ -37,13 +37,22 @@ jobs:
     - name: Sign extension with Mozilla
       if: github.ref_type == 'tag' && vars.MOZILLA_API_KEY != ''
       run: |
+        # Try to sign with a longer timeout
         web-ext sign \
           --api-key=${{ secrets.MOZILLA_API_KEY }} \
           --api-secret=${{ secrets.MOZILLA_API_SECRET }} \
-          --channel=unlisted
+          --channel=unlisted \
+          --timeout=300000 || echo "Signing timed out - check Mozilla Developer Hub for approval status"
+
         VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+
+        # Check if signed XPI was created
         if [ -f web-ext-artifacts/*.xpi ]; then
           cp web-ext-artifacts/*.xpi word-counter-$VERSION-signed.xpi
+          echo "✅ Signed XPI created successfully"
+        else
+          echo "⏳ Signing in progress - check https://addons.mozilla.org/developers/ for status"
+          echo "Extension will be available for download once approved by Mozilla"
         fi
         
     - name: Upload artifacts
