@@ -1,10 +1,8 @@
 name: Build Firefox Extension
 
+# Disabled - only using build-and-sign.yml for releases
 on:
-  push:
-    tags:
-      - 'v*'  # Triggers on version tags like v1.0.0
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:  # Allows manual triggering only
 
 jobs:
   build:
